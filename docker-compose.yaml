@@ -1,0 +1,172 @@
+name: grfcourses
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: grfcourses-db
+    command: >-
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    env_file:
+      - ./.env
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      # DEV: expõe o MySQL no host (Mac)
+      # PROD (Coolify): normalmente NÃO expor. Basta omitir DB_PORT_EXPOSED.
+      - "${DB_PORT_EXPOSED:-}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: grfcourses-phpmyadmin
+    profiles: ["dev"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: ${PHPMYADMIN_UPLOAD_LIMIT:-128M}
+    ports:
+      - "${PHPMYADMIN_PORT:-8080}:80"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: grfcourses-backend
+    profiles: ["prod"]
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+    # PROD (Coolify): normalmente NÃO precisa mapear porta; o Coolify/Traefik faz o roteamento.
+    # Mas deixar mapeado não quebra — apenas pode ser desnecessário.
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - backend_static:/app/staticfiles
+    command: ["/app/entrypoint.prod.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect((''127.0.0.1'',8000)); s.close()"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  backend_dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: grfcourses-backend-dev
+    profiles: ["dev"]
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # DEV: hot reload no Mac
+      - ./backend:/app
+    command: ["/app/entrypoint.dev.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect((''127.0.0.1'',8000)); s.close()"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: grfcourses-frontend
+    profiles: ["prod"]
+    env_file:
+      - ./.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    # PROD (Coolify): mapeamento pode ser opcional (Coolify/Traefik publica o serviço).
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "require(''net'').connect(3000,''127.0.0.1'').on(''connect'',()=>process.exit(0)).on(''error'',()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  frontend_dev:
+    image: node:20-alpine
+    container_name: grfcourses-frontend-dev
+    profiles: ["dev"]
+    env_file:
+      - ./.env
+    depends_on:
+      backend_dev:
+        condition: service_healthy
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    # DEV: polling melhora no Mac/volume compartilhado do Docker Desktop
+    command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --port 3000"
+    environment:
+      # melhora hot reload em volumes no Docker Desktop
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "require(''net'').connect(3000,''127.0.0.1'').on(''connect'',()=>process.exit(0)).on(''error'',()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  backend_static:
