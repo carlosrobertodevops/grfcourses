@@ -16,8 +16,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
-      # DEV: expõe o MySQL no host (Mac)
-      # PROD (Coolify): normalmente NÃO expor. Basta omitir DB_PORT_EXPOSED.
       - "${DB_PORT_EXPOSED:-}:3306"
     volumes:
       - db_data:/var/lib/mysql
@@ -65,13 +63,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # PROD (Coolify): normalmente NÃO precisa mapear porta; o Coolify/Traefik faz o roteamento.
-    # Mas deixar mapeado não quebra — apenas pode ser desnecessário.
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - backend_static:/app/staticfiles
-    command: ["/app/entrypoint.prod.sh"]
+    # Roda via sh para não depender de permissão de execução do arquivo
+    command: ["sh", "/app/entrypoint.prod.sh"]
     healthcheck:
       test:
         [
@@ -97,9 +94,9 @@ services:
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      # DEV: hot reload no Mac
       - ./backend:/app
-    command: ["/app/entrypoint.dev.sh"]
+    # CRÍTICO: como /app vem do bind mount do Mac, não confie em chmod +x
+    command: ["sh", "/app/entrypoint.dev.sh"]
     healthcheck:
       test:
         [
@@ -122,7 +119,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    # PROD (Coolify): mapeamento pode ser opcional (Coolify/Traefik publica o serviço).
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     healthcheck:
@@ -150,10 +146,8 @@ services:
       - ./frontend:/app
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
-    # DEV: polling melhora no Mac/volume compartilhado do Docker Desktop
     command: sh -c "npm ci && npm run dev -- --hostname 0.0.0.0 --port 3000"
     environment:
-      # melhora hot reload em volumes no Docker Desktop
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
     healthcheck:
