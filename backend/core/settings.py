@@ -33,7 +33,7 @@ if DEBUG:
 else:
     ALLOWED_HOSTS = config(
         "DJANGO_ALLOWED_HOSTS",
-        default="localhost,127.0.0.1,backend,backend_dev,0.0.0.0",
+        default="localhost,127.0.0.1,backend,backenddev,0.0.0.0",
     ).split(",")
 
 APPEND_SLASH = False
