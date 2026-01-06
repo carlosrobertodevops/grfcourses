@@ -81,6 +81,7 @@ type Props = {
   endpoint: string;
   method?: "GET" | "POST" | "PUT" | "DELETE";
   data?: Record<string, any>;
+<<<<<<< HEAD
   /**
    * When true, attaches `Authorization: Bearer <access_token>` from NextAuth session.
    * Default: false
@@ -122,6 +123,13 @@ const buildBaseUrl = async (): Promise<string> => {
   const clientBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
   return `${clientBase}/api/v1`;
 };
+=======
+  withAuth?: boolean;
+};
+
+const BASE_URL =
+  (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "") + "/api/v1";
+>>>>>>> 0d0f94a (Ajustes)
 
 export const api = async <TypeResponse>({
   endpoint,
@@ -132,6 +140,7 @@ export const api = async <TypeResponse>({
   const baseURL = await buildBaseUrl();
 
   const instance = axios.create({
+<<<<<<< HEAD
     baseURL,
     headers: {
       "Content-Type": "application/json",
@@ -156,16 +165,29 @@ export const api = async <TypeResponse>({
       url: endpoint,
       method,
       data: method !== "GET" ? data : undefined,
+=======
+    baseURL: BASE_URL,
+    withCredentials: false,
+  });
+
+  try {
+    const response = await instance.request<API<TypeResponse>>({
+      url: endpoint,
+      method,
+      data,
+>>>>>>> 0d0f94a (Ajustes)
     });
 
-    return request.data;
+    return response.data;
   } catch (error) {
-    const e = error as AxiosError<APIError>;
-
+    const e = error as AxiosError<any>;
     return {
       success: false,
-      detail: e.response?.data?.detail || "An unexpected error occurred",
-      code: e.response?.data?.code || "UNKNOWN_ERROR",
+      detail:
+        e.response?.data?.detail ||
+        e.response?.data?.message ||
+        "Erro inesperado",
+      code: "API_ERROR",
       data: null,
     };
   }

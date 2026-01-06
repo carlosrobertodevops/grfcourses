@@ -37,12 +37,15 @@
 import { api } from "@/lib/api";
 import { SignInForm, SignUpForm } from "@/schemas/auth";
 
+<<<<<<< HEAD
 /**
  * Backend endpoints (Django):
  * - POST /api/v1/accounts/signin/
  * - POST /api/v1/accounts/signup/
  */
 
+=======
+>>>>>>> 0d0f94a (Ajustes)
 export const signIn = async (data: SignInForm) => {
   return api<APISignInResponse>({
     endpoint: "/accounts/signin/",
@@ -60,7 +63,10 @@ export const signUp = async (data: SignUpForm) => {
       name: data.name,
       email: data.email,
       password: data.password,
+<<<<<<< HEAD
       // Backend expects this field (validated in Postman)
+=======
+>>>>>>> 0d0f94a (Ajustes)
       password_confirmation: data.confirmPassword,
     },
     withAuth: false,
