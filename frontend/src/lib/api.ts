@@ -1,47 +1,79 @@
-// "use server";
-
 // import axios, { AxiosError } from "axios";
-// import { auth } from "@/lib/auth";
 
 // type Props = {
-//     endpoint: string;
-//     method?: "GET" | "POST" | "PUT" | "DELETE";
-//     data?: object;
-//     withAuth?: boolean
-// }
+//   endpoint: string;
+//   method?: "GET" | "POST" | "PUT" | "DELETE";
+//   data?: Record<string, any>;
+//   /**
+//    * When true, will attempt to attach `Authorization: Bearer <access_token>`
+//    * from NextAuth session (server or client).
+//    *
+//    * Default: false (most public endpoints should not require auth).
+//    */
+//   withAuth?: boolean;
+// };
 
-// const BASE_URL = process.env.API_URL + "/api/v1";
+// const BASE_URL = (process.env.API_URL || "").replace(/\/$/, "") + "/api/v1";
 
-// export const api = async <TypeResponse>({ endpoint, method = "GET", data, withAuth = true }: Props): Promise<API<TypeResponse>> => {
-//     const session = await auth()
-
-//     const instance = axios.create({
-//         baseURL: BASE_URL
-//     })
-
-//     if (withAuth && session?.user.access_token) {
-//         instance.defaults.headers.common['Authorization'] = `Bearer ${session.user.access_token}`
+// async function getAccessToken(): Promise<string | undefined> {
+//   try {
+//     // Server-side (Node.js)
+//     if (typeof window === "undefined") {
+//       // dynamic import to avoid bundling server-only module into client
+//       const mod = await import("@/lib/auth");
+//       const session = await mod.auth();
+//       // @ts-ignore
+//       return session?.user?.access_token as string | undefined;
 //     }
 
-//     try {
-//         const request = await instance<API<TypeResponse>>(endpoint, {
-//             method,
-//             params: method == "GET" && data,
-//             data: method != "GET" && data
-//         })
-
-//         return request.data
-//     } catch (error) {
-//         const e = error as AxiosError<APIError>
-
-//         return {
-//             success: false,
-//             detail: e.response?.data.detail || "An unexpected error occurred",
-//             code: e.response?.data.code || "UNKNOWN_ERROR",
-//             data: null
-//         }
-//     }
+//     // Client-side (browser)
+//     const mod = await import("next-auth/react");
+//     const session = await mod.getSession();
+//     // @ts-ignore
+//     return session?.user?.access_token as string | undefined;
+//   } catch {
+//     return undefined;
+//   }
 // }
+
+// export const api = async <TypeResponse>({
+//   endpoint,
+//   method = "GET",
+//   data,
+//   withAuth = false,
+// }: Props): Promise<API<TypeResponse>> => {
+//   const instance = axios.create({
+//     baseURL: BASE_URL,
+//     withCredentials: true,
+//   });
+
+//   if (withAuth) {
+//     const token = await getAccessToken();
+//     if (token) {
+//       instance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+//     }
+//   }
+
+//   try {
+//     const request = await instance.request<API<TypeResponse>>({
+//       url: endpoint,
+//       method,
+//       params: method === "GET" ? data : undefined,
+//       data: method !== "GET" ? data : undefined,
+//     });
+
+//     return request.data;
+//   } catch (error) {
+//     const e = error as AxiosError<APIError>;
+
+//     return {
+//       success: false,
+//       detail: e.response?.data?.detail || "An unexpected error occurred",
+//       code: e.response?.data?.code || "UNKNOWN_ERROR",
+//       data: null,
+//     };
+//   }
+// };
 
 import axios, { AxiosError } from "axios";
 
@@ -50,36 +82,46 @@ type Props = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   data?: Record<string, any>;
   /**
-   * When true, will attempt to attach `Authorization: Bearer <access_token>`
-   * from NextAuth session (server or client).
-   *
-   * Default: false (most public endpoints should not require auth).
+   * When true, attaches `Authorization: Bearer <access_token>` from NextAuth session.
+   * Default: false
    */
   withAuth?: boolean;
 };
 
-const BASE_URL = (process.env.API_URL || "").replace(/\/$/, "") + "/api/v1";
+type APIError = {
+  success?: boolean;
+  detail?: string;
+  code?: string;
+  data?: any;
+};
 
-async function getAccessToken(): Promise<string | undefined> {
-  try {
-    // Server-side (Node.js)
-    if (typeof window === "undefined") {
-      // dynamic import to avoid bundling server-only module into client
-      const mod = await import("@/lib/auth");
-      const session = await mod.auth();
-      // @ts-ignore
-      return session?.user?.access_token as string | undefined;
-    }
+/**
+ * IMPORTANT (Docker + Browser):
+ *
+ * - In the BROWSER, the request must go to http://localhost:8000 (Django exposed port),
+ *   because the browser cannot reach Docker internal DNS (backenddev).
+ *   => Use NEXT_PUBLIC_API_URL for client-side.
+ *
+ * - In SERVER-SIDE (NextAuth / route handlers / server actions), we CAN reach Docker DNS:
+ *   => Use API_URL=http://backenddev:8000
+ *
+ * If NEXT_PUBLIC_API_URL is missing, axios falls back to a relative URL like "/api/v1/..."
+ * which hits Next.js itself (localhost:3000) and returns 404.
+ */
 
-    // Client-side (browser)
-    const mod = await import("next-auth/react");
-    const session = await mod.getSession();
-    // @ts-ignore
-    return session?.user?.access_token as string | undefined;
-  } catch {
-    return undefined;
+const buildBaseUrl = async (): Promise<string> => {
+  const isServer = typeof window === "undefined";
+
+  if (isServer) {
+    // Server-side: prefer Docker service hostname
+    const serverBase = (process.env.API_URL || "http://backenddev:8000").replace(/\/$/, "");
+    return `${serverBase}/api/v1`;
   }
-}
+
+  // Client-side: must use NEXT_PUBLIC_
+  const clientBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+  return `${clientBase}/api/v1`;
+};
 
 export const api = async <TypeResponse>({
   endpoint,
@@ -87,23 +129,32 @@ export const api = async <TypeResponse>({
   data,
   withAuth = false,
 }: Props): Promise<API<TypeResponse>> => {
+  const baseURL = await buildBaseUrl();
+
   const instance = axios.create({
-    baseURL: BASE_URL,
-    withCredentials: true,
+    baseURL,
+    headers: {
+      "Content-Type": "application/json",
+    },
   });
 
-  if (withAuth) {
-    const token = await getAccessToken();
-    if (token) {
-      instance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    }
-  }
-
   try {
+    if (withAuth) {
+      // Only load NextAuth on server-side
+      if (typeof window === "undefined") {
+        const mod = await import("@/lib/auth");
+        const session = await mod.auth();
+
+        const token = session?.user?.access_token;
+        if (token) {
+          instance.defaults.headers.common.Authorization = `Bearer ${token}`;
+        }
+      }
+    }
+
     const request = await instance.request<API<TypeResponse>>({
       url: endpoint,
       method,
-      params: method === "GET" ? data : undefined,
       data: method !== "GET" ? data : undefined,
     });
 

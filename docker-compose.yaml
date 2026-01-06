@@ -20,17 +20,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "127.0.0.1",
-          "-u",
-          "root",
-          "-p${MYSQL_ROOT_PASSWORD}",
-        ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -52,6 +42,7 @@ services:
       - "${PHPMYADMIN_PORT:-8080}:80"
     restart: unless-stopped
 
+  # PROD
   backend:
     build:
       context: ./backend
@@ -68,34 +59,6 @@ services:
     volumes:
       - backend_static:/app/staticfiles
     command: ["sh", "/app/entrypoint.prod.sh"]
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect((''127.0.0.1'',8000)); s.close()"',
-        ]
-      interval: 10s
-      timeout: 3s
-      retries: 15
-    restart: unless-stopped
-
-  # ✅ RENOMEADO: backend_dev -> backenddev (sem underscore)
-  backenddev:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: grfcourses-backend-dev
-    profiles: ["dev"]
-    env_file:
-      - ./.env
-    depends_on:
-      db:
-        condition: service_healthy
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
-    volumes:
-      - ./backend:/app
-    command: ["sh", "/app/entrypoint.dev.sh"]
     healthcheck:
       test:
         [
@@ -125,6 +88,34 @@ services:
         [
           "CMD-SHELL",
           'node -e "require(''net'').connect(3000,''127.0.0.1'').on(''connect'',()=>process.exit(0)).on(''error'',()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  # DEV
+  backenddev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: grfcourses-backend-dev
+    profiles: ["dev"]
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+    command: ["sh", "/app/entrypoint.dev.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import socket; s=socket.socket(); s.settimeout(2); s.connect((''127.0.0.1'',8000)); s.close()"',
         ]
       interval: 10s
       timeout: 3s
