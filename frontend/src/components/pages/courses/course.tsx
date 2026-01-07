@@ -137,6 +137,12 @@ export const CoursePage = ({ course }: Props) => {
     }
   }, [searchParams]);
 
+  // Trazer sempre uma imagem padrão caso não tenha uma imagem
+  const thumbnailSrc =
+    typeof course.thumbnail === "string" && course.thumbnail.trim() !== ""
+      ? course.thumbnail.trim()
+      : "/thumbnails/default.png";
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -200,11 +206,11 @@ export const CoursePage = ({ course }: Props) => {
               <CardContent className="px-6 mb-6">
                 <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg mb-6 flex items-center justify-center">
                   <Image
-                    src={course.thumbnail}
+                    src={thumbnailSrc}
                     alt={course.title}
                     width={800}
                     height={500}
-                    className="size-full object-cover rounded-lg"
+                    // className="size-full object-cover rounded-lg"
                   />
                 </div>
 
