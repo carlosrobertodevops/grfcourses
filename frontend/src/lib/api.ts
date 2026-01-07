@@ -1,4 +1,4 @@
-// "use server";
+"use server";
 
 import axios, { AxiosError } from "axios";
 import { auth } from "@/lib/auth";
@@ -25,8 +25,7 @@ export const api = async <TypeResponse>({
   });
 
   if (withAuth && session?.user.access_token) {
-    instance.defaults.headers.common["Authorization"] =
-      `Bearer ${session.user.access_token}`;
+    instance.defaults.headers.common["Authorization"] = `Bearer ${session.user.access_token}`;
   }
 
   try {

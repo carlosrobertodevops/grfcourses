@@ -1,55 +1,3 @@
-// import NextAuth from "next-auth";
-// import Credentials from "next-auth/providers/credentials";
-// import { signIn as signInAPI } from "@/services/auth";
-
-// export const { handlers, signIn, signOut, auth } = NextAuth({
-//   providers: [
-//     Credentials({
-//       name: "credentials",
-//       credentials: {
-//         email: { label: "Email", type: "email" },
-//         password: { label: "Password", type: "password" },
-//       },
-//       async authorize(credentials) {
-//         if (!credentials?.email || !credentials?.password) return null;
-
-//         const response = await signInAPI({
-//           email: credentials.email,
-//           password: credentials.password,
-//         });
-
-//         if (!response.success || !response.data) return null;
-
-//         return {
-//           id: response.data.user.id,
-//           name: response.data.user.name,
-//           email: response.data.user.email,
-//           access_token: response.data.access_token,
-//         };
-//       },
-//     }),
-//   ],
-//   session: {
-//     strategy: "jwt",
-//   },
-//   callbacks: {
-//     async jwt({ token, user }) {
-//       if (user) {
-//         token.id = user.id;
-//         token.access_token = user.access_token;
-//       }
-//       return token;
-//     },
-//     async session({ session, token }) {
-//       if (session.user) {
-//         session.user.id = token.id as number;
-//         session.user.access_token = token.access_token as string;
-//       }
-//       return session;
-//     },
-//   },
-// });
-
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { signIn as signInAPI } from "@/services/auth";
@@ -106,10 +54,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         // ✅ Caso 2: formato "plain" do seu backend { user, access_token }
-        if (
-          (response as PlainResponse).access_token &&
-          (response as PlainResponse).user?.id
-        ) {
+        if ((response as PlainResponse).access_token && (response as PlainResponse).user?.id) {
           const r = response as PlainResponse;
 
           return {
