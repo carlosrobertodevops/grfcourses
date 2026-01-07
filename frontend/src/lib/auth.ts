@@ -2,22 +2,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { signIn as signInAPI } from "@/services/auth";
 
-type WrappedResponse = {
-  success: boolean;
-  data?: {
-    user: { id: number; name: string; email: string };
-    access_token: string;
-  };
-};
-
-type PlainResponse = {
-  user: { id: number; name: string; email: string };
-  access_token: string;
-};
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
   trustHost: process.env.NEXTAUTH_TRUST_HOST === "true",
+  secret: process.env.NEXTAUTH_SECRET,
 
   providers: [
     Credentials({
@@ -26,53 +13,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-
       async authorize(credentials) {
-        const email = credentials?.email?.toString().trim();
-        const password = credentials?.password?.toString();
+        const email = String(credentials?.email || "").trim();
+        const password = String(credentials?.password || "");
 
         if (!email || !password) return null;
 
-        const response = (await signInAPI({
-          email,
-          password,
-        })) as WrappedResponse | PlainResponse | null;
+        // Backend retorna: { success: true, data: { id, name, email, access_token } }
+        const response = await signInAPI({ email, password });
 
-        if (!response) return null;
+        if (!response?.success || !response.data) return null;
 
-        // ✅ Caso 1: formato "wrapped" { success: true, data: {...} }
-        if ((response as WrappedResponse).success === true) {
-          const r = response as WrappedResponse;
-          if (!r.data?.user?.id || !r.data?.access_token) return null;
-
-          return {
-            id: r.data.user.id,
-            name: r.data.user.name,
-            email: r.data.user.email,
-            access_token: r.data.access_token,
-          };
-        }
-
-        // ✅ Caso 2: formato "plain" do seu backend { user, access_token }
-        if ((response as PlainResponse).access_token && (response as PlainResponse).user?.id) {
-          const r = response as PlainResponse;
-
-          return {
-            id: r.user.id,
-            name: r.user.name,
-            email: r.user.email,
-            access_token: r.access_token,
-          };
-        }
-
-        return null;
+        return {
+          id: response.data.id,
+          name: response.data.name,
+          email: response.data.email,
+          access_token: response.data.access_token,
+        };
       },
     }),
   ],
 
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" },
 
   callbacks: {
     async jwt({ token, user }) {
@@ -86,12 +48,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id as number;
-        (session.user as any).access_token = token.access_token as string;
-        session.user.name = token.name as string;
-        session.user.email = token.email as string;
-      }
+      // Mantém compatível com seu código atual (session.user.access_token)
+      (session as any).user = session.user || {};
+      (session as any).user.id = (token as any).id ?? null;
+      (session as any).user.access_token = (token as any).access_token ?? null;
       return session;
     },
   },

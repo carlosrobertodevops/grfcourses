@@ -1,67 +1,39 @@
-import { api } from "@/lib/api";
-import { SignInForm, SignUpForm } from "@/schemas/auth";
+import { api, API } from "@/lib/api";
 
-/**
- * Backend endpoints (Django):
- * - POST /api/v1/accounts/signin/
- * - POST /api/v1/accounts/signup/
- */
-
-export const signIn = async (data: SignInForm) => {
-  return api<APISignInResponse>({
-    endpoint: "/accounts/signin/",
-    method: "POST",
-    data,
-    withAuth: false,
-  });
+export type AuthData = {
+  id: number;
+  name: string;
+  email: string;
+  access_token: string;
 };
 
-export const signUp = async (data: SignUpForm) => {
-  return api<APISignUpResponse>({
+export async function signIn(payload: {
+  email: string;
+  password: string;
+}): Promise<API<AuthData>> {
+  return api<AuthData>({
+    endpoint: "/accounts/signin/",
+    method: "POST",
+    data: payload,
+    withAuth: false,
+  });
+}
+
+export async function signUp(payload: {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}): Promise<API<AuthData>> {
+  return api<AuthData>({
     endpoint: "/accounts/signup/",
     method: "POST",
     data: {
-      name: data.name,
-      email: data.email,
-      password: data.password,
-      password_confirmation: data.confirmPassword,
+      name: payload.name,
+      email: payload.email,
+      password: payload.password,
+      password_confirmation: payload.confirmPassword, // igual Postman
     },
     withAuth: false,
   });
-};
-
-// import { api } from "@/lib/api";
-// import { SignInForm, SignUpForm } from "@/schemas/auth";
-
-// /**
-//  * Backend endpoints:
-//  * - POST /api/v1/accounts/signin/
-//  * - POST /api/v1/accounts/signup/
-//  *
-//  * Note: these are public endpoints, so `withAuth: false`.
-//  */
-// export const signIn = async (data: SignInForm) => {
-//   return api<APISignInResponse>({
-//     endpoint: "/accounts/signin/",
-//     method: "POST",
-//     data,
-//     withAuth: false,
-//   });
-// };
-
-// export const signUp = async (data: SignUpForm) => {
-//   // Backend does not require confirmPassword, but we keep it in the frontend schema.
-//   // Send only the fields backend uses.
-//   return api<APISignUpResponse>({
-//     endpoint: "/accounts/signup/",
-//     method: "POST",
-//     data: {
-//       name: data.name,
-//       email: data.email,
-//       password: data.password,
-//       // If your backend ever enforces confirmation, uncomment below:
-//       // password_confirmation: data.confirmPassword,
-//     },
-//     withAuth: false,
-//   });
-// };
+}

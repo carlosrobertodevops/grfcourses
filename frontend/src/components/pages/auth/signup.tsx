@@ -24,6 +24,7 @@ import Link from "next/link";
 export const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -41,12 +42,16 @@ export const SignUpPage = () => {
     try {
       const response = await mutateAsync(data);
 
+      console.log(response);
+
       if (!response.success) {
-        toast.error("Erro ao criar conta.", {
+        toast.error("Erro ao tentar criar conta.", {
           description: response.detail,
         });
         return;
       }
+
+      setIsLoading(true);
 
       toast.success("Conta criada com sucesso!", {
         description: "Redirecionando para o dashboard...",
@@ -54,7 +59,9 @@ export const SignUpPage = () => {
 
       router.push("/dashboard");
     } catch (error) {
-      toast.error("Erro ao criar conta.", {
+      console.log(error);
+
+      toast.error("Erro ao tentar criar conta.", {
         description: "Tente novamente mais tarde.",
       });
     }

@@ -44,6 +44,8 @@ export const SignInPage = () => {
         redirect: false,
       });
 
+      console.log(result);
+
       if (result.error) {
         toast.error("Erro ao fazer login", {
           description: "Email ou senha incorretos",
