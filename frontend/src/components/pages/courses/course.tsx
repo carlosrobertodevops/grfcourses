@@ -199,11 +199,11 @@ export const CoursePage = ({ course }: Props) => {
             <Card className="glass-effect">
               <CardContent className="px-6 mb-6">
                 <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg mb-6 flex items-center justify-center">
-                  <img
+                  <Image
                     src={course.thumbnail}
                     alt={course.title}
-                    // width={800}
-                    // height={500}
+                    width={800}
+                    height={500}
                     className="size-full object-cover rounded-lg"
                   />
                 </div>
