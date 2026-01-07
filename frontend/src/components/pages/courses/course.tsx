@@ -1,11 +1,22 @@
 "use client";
 
 import { Navbar } from "@/components/layout/navbar";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { levelColors } from "@/constants/colors";
@@ -18,96 +29,113 @@ import { queryClient } from "@/lib/query-client";
 import { CourseReviewForm, courseReviewSchema } from "@/schemas/courses";
 import { useRouter } from "@bprogress/next/app";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Award, BookOpen, CheckCircle, Clock, Play, Star, Users } from "lucide-react";
+import {
+  Award,
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Play,
+  Star,
+  Users,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import Image from "next/image";
 
 type Props = {
   course: Course;
-}
+};
 
 export const CoursePage = ({ course }: Props) => {
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams();
 
-  const session = useSession()
-  const router = useRouter()
+  const session = useSession();
+  const router = useRouter();
 
-  const { data: courseContent, isLoading: courseContentIsLoading } = useGetCourseContent(course.id)
-  const { data: courseReviews, isLoading: courseReviewsIsLoading, refetch: getCourseReviews } = useGetCourseReviews(course.id)
-  const { isPending: courseReviewIsPending, mutateAsync: addCourseReview } = useAddCourseReview()
-  const { isPending: courseEnrollIsPending, mutateAsync: enrollInCourse } = useEnrollInCourse()
+  const { data: courseContent, isLoading: courseContentIsLoading } =
+    useGetCourseContent(course.id);
+  const {
+    data: courseReviews,
+    isLoading: courseReviewsIsLoading,
+    refetch: getCourseReviews,
+  } = useGetCourseReviews(course.id);
+  const { isPending: courseReviewIsPending, mutateAsync: addCourseReview } =
+    useAddCourseReview();
+  const { isPending: courseEnrollIsPending, mutateAsync: enrollInCourse } =
+    useEnrollInCourse();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
   } = useForm<CourseReviewForm>({
-    resolver: zodResolver(courseReviewSchema)
-  })
+    resolver: zodResolver(courseReviewSchema),
+  });
 
   const handleEnroll = async () => {
     if (!session.data?.user) {
       toast.error("Faça login para se inscrever!", {
-        description: "Você precisa estar logado para se inscrever no curso."
-      })
+        description: "Você precisa estar logado para se inscrever no curso.",
+      });
       router.push("/auth/signin");
       return;
     }
 
-    const response = await enrollInCourse(course.id)
+    const response = await enrollInCourse(course.id);
     if (!response.success || !response.data) {
       toast.error("Erro na inscrição", {
-        description: response.detail
+        description: response.detail,
       });
       return;
     }
 
     toast.info("Você será redirecionado para o pagamento.", {
-      description: "Por favor, aguarde enquanto processamos sua inscrição."
-    })
+      description: "Por favor, aguarde enquanto processamos sua inscrição.",
+    });
 
-    window.location.href = response.data.checkout_url
-  }
+    window.location.href = response.data.checkout_url;
+  };
 
   const handleSubmitReview = async (data: CourseReviewForm) => {
-    const response = await addCourseReview({ courseId: course.id, data })
+    const response = await addCourseReview({ courseId: course.id, data });
 
     if (!response.success) {
       toast.error("Erro ao enviar avaliação", {
-        description: response.detail
+        description: response.detail,
       });
       return;
     }
 
-    getCourseReviews()
-    router.refresh()
-    queryClient.invalidateQueries({ queryKey: [queryKeys.GET_COURSES] })
+    getCourseReviews();
+    router.refresh();
+    queryClient.invalidateQueries({ queryKey: [queryKeys.GET_COURSES] });
 
-    toast.success("Avalição enviado com sucesso!")
-    reset()
-  }
+    toast.success("Avaliação enviado com sucesso!");
+    reset();
+  };
 
   useEffect(() => {
-    const message = searchParams.get("message")
+    const message = searchParams.get("message");
     if (!message) return;
 
     if (message === "cancel_order") {
       toast.error("Inscrição cancelada", {
-        description: "Você cancelou a inscrição no curso."
-      })
+        description: "Você cancelou a inscrição no curso.",
+      });
     }
 
     if (message === "payment_failed") {
       toast.error("Pagamentou falhou", {
-        description: "Houve um erro no processamento do pagamento. Tente novamente mais tarde."
-      })
+        description:
+          "Houve um erro no processamento do pagamento. Tente novamente mais tarde.",
+      });
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen">
@@ -127,12 +155,13 @@ export const CoursePage = ({ course }: Props) => {
                     {course.average_rating} ({course.total_reviews} avaliações)
                   </div>
                 </div>
-                <h1 className="text-4xl font-bold">
-                  {course.title}
-                </h1>
+                <h1 className="text-4xl font-bold">{course.title}</h1>
                 <div className="flex flex-wrap gap-2 px-1">
-                  {course.tags.map(tag => (
-                    <div key={tag.id} className="mr-2 mb-2 bg-primary/10 text-foreground px-2.5 py-0.5 rounded-md border border-primary text-[10px]">
+                  {course.tags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="mr-2 mb-2 bg-primary/10 text-foreground px-2.5 py-0.5 rounded-md border border-primary text-[10px]"
+                    >
                       {tag.name}
                     </div>
                   ))}
@@ -173,6 +202,8 @@ export const CoursePage = ({ course }: Props) => {
                   <img
                     src={course.thumbnail}
                     alt={course.title}
+                    // width={800}
+                    // height={500}
                     className="size-full object-cover rounded-lg"
                   />
                 </div>
@@ -189,7 +220,10 @@ export const CoursePage = ({ course }: Props) => {
 
                   {course.enrolled_at ? (
                     <div className="space-y-4">
-                      <Link href={`/courses/${course.id}/learn`} className="w-full">
+                      <Link
+                        href={`/courses/${course.id}/learn`}
+                        className="w-full"
+                      >
                         <Button className="w-full cursor-pointer" size="lg">
                           <Play className="size-4 mr-2" />
                           Continuar curso
@@ -197,12 +231,22 @@ export const CoursePage = ({ course }: Props) => {
                       </Link>
 
                       <div className="text-xs text-muted-foreground mt-2 text-center">
-                        Você já se inscreveu em {new Date(course.enrolled_at).toLocaleDateString("pt-BR")}
+                        Você já se inscreveu em{" "}
+                        {new Date(course.enrolled_at).toLocaleDateString(
+                          "pt-BR",
+                        )}
                       </div>
                     </div>
                   ) : (
-                    <Button className="w-full cursor-pointer" size="lg" onClick={handleEnroll} disabled={courseEnrollIsPending}>
-                      {courseEnrollIsPending ? "Processando..." : "Inscrever-se agora"}
+                    <Button
+                      className="w-full cursor-pointer"
+                      size="lg"
+                      onClick={handleEnroll}
+                      disabled={courseEnrollIsPending}
+                    >
+                      {courseEnrollIsPending
+                        ? "Processando..."
+                        : "Inscrever-se agora"}
                     </Button>
                   )}
 
@@ -246,25 +290,35 @@ export const CoursePage = ({ course }: Props) => {
                     <CardHeader>
                       <CardTitle>Conteúdo do Curso</CardTitle>
                       <CardDescription>
-                        {courseContent?.data?.total_modules ?? 0} módulos • {courseContent?.data?.total_lessons ?? 0} aulas • {formatMinutes(courseContent?.data?.total_time ?? 0)}
+                        {courseContent?.data?.total_modules ?? 0} módulos •{" "}
+                        {courseContent?.data?.total_lessons ?? 0} aulas •{" "}
+                        {formatMinutes(courseContent?.data?.total_time ?? 0)}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {courseContentIsLoading && (
                         <div className="mt-3 space-y-4">
                           {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} className="h-8 bg-muted rounded w-full mb-2 animate-pulse" />
+                            <div
+                              key={index}
+                              className="h-8 bg-muted rounded w-full mb-2 animate-pulse"
+                            />
                           ))}
                         </div>
                       )}
 
                       <Accordion type="single" collapsible className="w-full">
                         {courseContent?.data?.modules.map((module, index) => (
-                          <AccordionItem key={module.id} value={String(module.id)}>
+                          <AccordionItem
+                            key={module.id}
+                            value={String(module.id)}
+                          >
                             <AccordionTrigger className="text-left">
                               <div className="flex items-center justify-between w-full mr-4">
                                 <span className="font-medium flex items-center">
-                                  <span className="text-xs text-primary">{index + 1} • </span>
+                                  <span className="text-xs text-primary">
+                                    {index + 1} •{" "}
+                                  </span>
                                   &nbsp;
                                   {module.title}
                                 </span>
@@ -275,11 +329,16 @@ export const CoursePage = ({ course }: Props) => {
                             </AccordionTrigger>
                             <AccordionContent>
                               <div className="space-y-2 pl-4">
-                                {module.lessons.map(lesson => (
-                                  <div key={lesson.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                                {module.lessons.map((lesson) => (
+                                  <div
+                                    key={lesson.id}
+                                    className="flex items-center justify-between py-2 border-b last:border-b-0"
+                                  >
                                     <div className="flex items-center space-x-3">
                                       <Play className="size-4 text-muted-foreground" />
-                                      <span className="text-sm">{lesson.title}</span>
+                                      <span className="text-sm">
+                                        {lesson.title}
+                                      </span>
                                     </div>
                                     <span className="text-sm text-muted-foreground">
                                       {formatMinutes(lesson.time_estimate)}
@@ -302,41 +361,88 @@ export const CoursePage = ({ course }: Props) => {
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center">
                           <Star className="size-5 fill-yellow-400 text-yellow-400" />
-                          <span className="ml-1 text-lg font-semibold">{course.average_rating}</span>
+                          <span className="ml-1 text-lg font-semibold">
+                            {course.average_rating}
+                          </span>
                         </div>
-                        <span className="text-muted-foreground">({course.total_reviews} avaliações)</span>
+                        <span className="text-muted-foreground">
+                          ({course.total_reviews} avaliações)
+                        </span>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {course.enrolled_at && session.status === "authenticated" && (
-                        <form onSubmit={handleSubmit(handleSubmitReview)} className="space-y-4">
-                          <div className="flex flex-col lg:flex-row gap-4">
-                            <div className="space-y-1 w-full lg:w-1/3">
-                              <Input type="number" min="1" max="5" step="1" placeholder="Sua nota" disabled={courseReviewIsPending || courseReviewsIsLoading} {...register("rating")} />
-                              {errors.rating && <p className="text-red-500 text-sm">{errors.rating.message}</p>}
-                            </div>
+                      {course.enrolled_at &&
+                        session.status === "authenticated" && (
+                          <form
+                            onSubmit={handleSubmit(handleSubmitReview)}
+                            className="space-y-4"
+                          >
+                            <div className="flex flex-col lg:flex-row gap-4">
+                              <div className="space-y-1 w-full lg:w-1/3">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="5"
+                                  step="1"
+                                  placeholder="Sua nota"
+                                  disabled={
+                                    courseReviewIsPending ||
+                                    courseReviewsIsLoading
+                                  }
+                                  {...register("rating")}
+                                />
+                                {errors.rating && (
+                                  <p className="text-red-500 text-sm">
+                                    {errors.rating.message}
+                                  </p>
+                                )}
+                              </div>
 
-                            <div className="space-y-1 flex-1 w-full">
-                              <Input type="text" placeholder="Seu comentário" disabled={courseReviewIsPending || courseReviewsIsLoading} {...register("comment")} />
-                              {errors.comment && <p className="text-red-500 text-sm">{errors.comment.message}</p>}
+                              <div className="space-y-1 flex-1 w-full">
+                                <Input
+                                  type="text"
+                                  placeholder="Seu comentário"
+                                  disabled={
+                                    courseReviewIsPending ||
+                                    courseReviewsIsLoading
+                                  }
+                                  {...register("comment")}
+                                />
+                                {errors.comment && (
+                                  <p className="text-red-500 text-sm">
+                                    {errors.comment.message}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <Button type="submit" className="w-full" disabled={courseReviewIsPending || courseReviewsIsLoading}>
-                            Enviar avaliação
-                          </Button>
-                        </form>
-                      )}
+                            <Button
+                              type="submit"
+                              className="w-full"
+                              disabled={
+                                courseReviewIsPending || courseReviewsIsLoading
+                              }
+                            >
+                              Enviar avaliação
+                            </Button>
+                          </form>
+                        )}
 
                       {courseReviewsIsLoading && (
                         <div className="mt-3 space-y-4">
                           {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} className="h-8 bg-muted rounded w-full mb-2 animate-pulse" />
+                            <div
+                              key={index}
+                              className="h-8 bg-muted rounded w-full mb-2 animate-pulse"
+                            />
                           ))}
                         </div>
                       )}
 
                       {courseReviews?.data?.map((review, index) => (
-                        <div key={index} className="border-b pb-4 last:border-b-0">
+                        <div
+                          key={index}
+                          className="border-b pb-4 last:border-b-0"
+                        >
                           <div className="flex items-center space-x-4">
                             <Avatar>
                               <AvatarFallback>
@@ -346,11 +452,18 @@ export const CoursePage = ({ course }: Props) => {
                             <div className="flex-1 space-y-2">
                               <div className="flex items-center justify-between">
                                 <h5 className="font-medium">{review.user}</h5>
-                                <span className="text-sm text-muted-foreground">{new Date(review.created_at).toLocaleDateString("pt-BR")}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(
+                                    review.created_at,
+                                  ).toLocaleDateString("pt-BR")}
+                                </span>
                               </div>
                               <div className="flex items-center">
                                 {Array.from({ length: 5 }).map((_, i) => (
-                                  <Star key={i} className={`size-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                                  <Star
+                                    key={i}
+                                    className={`size-4 ${i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                                  />
                                 ))}
                               </div>
                               <p className="text-sm text-muted-foreground">
@@ -380,17 +493,27 @@ export const CoursePage = ({ course }: Props) => {
                     </Avatar>
                     <div>
                       <h4 className="font-semibold">{course.author.name}</h4>
-                      <p className="text-sm text-muted-foreground">Instrutor da EduPlatform</p>
+                      <p className="text-sm text-muted-foreground">
+                        Instrutor da EduPlatform
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between px-12">
                     <div className="text-center">
-                      <div className="text-lg font-semibold">{course.author.average_rating}</div>
-                      <div className="text-xs text-muted-foreground">Avaliação</div>
+                      <div className="text-lg font-semibold">
+                        {course.author.average_rating}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Avaliação
+                      </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-semibold">{course.author.total_courses}</div>
-                      <div className="text-xs text-muted-foreground">Cursos</div>
+                      <div className="text-lg font-semibold">
+                        {course.author.total_courses}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Cursos
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -400,5 +523,5 @@ export const CoursePage = ({ course }: Props) => {
         </div>
       </section>
     </div>
-  )
-}
+  );
+};

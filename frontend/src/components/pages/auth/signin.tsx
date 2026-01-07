@@ -53,10 +53,22 @@ export const SignInPage = () => {
         return;
       }
 
-      toast.success("Login realizado com sucesso!", {
-        description: "Redirecionando para o dashboard...",
+      // toast.success("Login realizado com sucesso!", ,{
+      //   description: "Redirecionando para o dashboard...",
+      //   duration: 2000,
+      // });
+      toast.success("Login realizado com sucesso", {
+        style: {
+          "--normal-bg":
+            "color-mix(in oklab, light-dark(var(--color-green-600), var(--color-green-400)) 10%, var(--background))",
+          "--normal-text":
+            "light-dark(var(--color-green-600), var(--color-green-400))",
+          "--normal-border":
+            "light-dark(var(--color-green-600), var(--color-green-400))",
+        } as React.CSSProperties,
         duration: 2000,
       });
+
       router.push("/dashboard");
     } catch (error) {
       toast.error("Erro ao entrar na conta.", {
