@@ -4,12 +4,12 @@ import { useTheme } from "next-themes";
 import { Toaster } from "sonner";
 
 export const ToasterProvider = ({ children }: { children: React.ReactNode }) => {
-    const { theme } = useTheme()
+  const { theme } = useTheme();
 
-    return (
-        <>
-            {children}
-            <Toaster theme={theme as "light" | "dark" | "system"} />
-        </>
-    )
-}
+  return (
+    <>
+      {children}
+      <Toaster theme={theme as "light" | "dark" | "system"} />
+    </>
+  );
+};

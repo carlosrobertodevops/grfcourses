@@ -8,13 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,8 +39,15 @@ export const SignUpPage = () => {
       console.log(response);
 
       if (!response.success) {
+        // toast.error("Erro ao tentar criar conta.", {
+        //   description: response.detail,
+        // });
         toast.error("Erro ao tentar criar conta.", {
-          description: response.detail,
+          style: {
+            "--normal-bg": "color-mix(in oklab, var(--destructive) 10%, var(--background))",
+            "--normal-text": "var(--destructive)",
+            "--normal-border": "var(--destructive)",
+          } as React.CSSProperties,
         });
         return;
       }
@@ -55,6 +56,12 @@ export const SignUpPage = () => {
 
       toast.success("Conta criada com sucesso!", {
         description: "Redirecionando para o dashboard...",
+        style: {
+          "--normal-bg":
+            "color-mix(in oklab, light-dark(var(--color-green-600), var(--color-green-400)) 10%, var(--background))",
+          "--normal-text": "light-dark(var(--color-green-600), var(--color-green-400))",
+          "--normal-border": "light-dark(var(--color-green-600), var(--color-green-400))",
+        } as React.CSSProperties,
       });
 
       router.push("/dashboard");
@@ -63,6 +70,11 @@ export const SignUpPage = () => {
 
       toast.error("Erro ao tentar criar conta.", {
         description: "Tente novamente mais tarde.",
+        style: {
+          "--normal-bg": "color-mix(in oklab, var(--destructive) 10%, var(--background))",
+          "--normal-text": "var(--destructive)",
+          "--normal-border": "var(--destructive)",
+        } as React.CSSProperties,
       });
     }
   };
@@ -74,29 +86,15 @@ export const SignUpPage = () => {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md glass-effect">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              Criar conta
-            </CardTitle>
-            <CardDescription className="text-center">
-              Crie sua conta para começar a aprender
-            </CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">Criar conta</CardTitle>
+            <CardDescription className="text-center">Crie sua conta para começar a aprender</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome completo</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Seu nome"
-                  disabled={isPending}
-                  {...register("name")}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">
-                    {errors.name.message}
-                  </p>
-                )}
+                <Input id="name" type="text" placeholder="Seu nome" disabled={isPending} {...register("name")} />
+                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -107,11 +105,7 @@ export const SignUpPage = () => {
                   disabled={isPending}
                   {...register("email")}
                 />
-                {errors.email && (
-                  <p className="text-sm text-destructive">
-                    {errors.email.message}
-                  </p>
-                )}
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
@@ -130,18 +124,10 @@ export const SignUpPage = () => {
                     className="absolute right-0 top-0 h-full px-3 py-2 cursor-pointer"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? (
-                      <EyeOff className="size-4" />
-                    ) : (
-                      <Eye className="size-4" />
-                    )}
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </Button>
                 </div>
-                {errors.password && (
-                  <p className="text-sm text-destructive">
-                    {errors.password.message}
-                  </p>
-                )}
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar Senha</Label>
@@ -160,35 +146,20 @@ export const SignUpPage = () => {
                     className="absolute right-0 top-0 h-full px-3 py-2 cursor-pointer"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="size-4" />
-                    ) : (
-                      <Eye className="size-4" />
-                    )}
+                    {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </Button>
                 </div>
-                {errors.confirmPassword && (
-                  <p className="text-sm text-destructive">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
               </div>
 
-              <Button
-                type="submit"
-                className="w-full cursor-pointer"
-                disabled={isPending}
-              >
+              <Button type="submit" className="w-full cursor-pointer" disabled={isPending}>
                 {isPending ? "Criando conta..." : "Criar conta"}
               </Button>
             </form>
 
             <div className="text-center text-sm">
               Já tem conta?{" "}
-              <Link
-                href="/auth/signin"
-                className="text-primary hover:underline"
-              >
+              <Link href="/auth/signin" className="text-primary hover:underline">
                 Faça login
               </Link>
             </div>
