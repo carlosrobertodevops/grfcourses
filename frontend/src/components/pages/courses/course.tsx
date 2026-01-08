@@ -7,7 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -210,7 +210,7 @@ export const CoursePage = ({ course }: Props) => {
                     alt={course.title}
                     width={800}
                     height={500}
-                    // className="size-full object-cover rounded-lg"
+                    className="size-full object-cover rounded-lg"
                   />
                 </div>
 
@@ -451,6 +451,10 @@ export const CoursePage = ({ course }: Props) => {
                         >
                           <div className="flex items-center space-x-4">
                             <Avatar>
+                              <AvatarImage
+                                src="/thumbnails/eu.png"
+                                alt="@shadcn"
+                              />
                               <AvatarFallback>
                                 {review.user.charAt(0)}
                               </AvatarFallback>
